@@ -42,6 +42,18 @@ struct WrongSizeExc {
 	}
 };
 
+struct WrongCRCExc {
+	int origCRC;
+	int curCRC;
+
+	WrongCRCExc(int o, int c): origCRC(o), curCRC(c) {};
+
+	void what() {
+		cout << "Original CRC32 " << origCRC << " does not match with current CRC32 " << curCRC << ".\n";
+		std::system("pause");
+	}
+};
+
 //Inflate.cpp
 struct InflateDecodeFail : public exception {
 	string error;

@@ -64,7 +64,7 @@ void gzip_archive(vector<string> &filename, string &archiveName, string &outputF
 			out.write(fname.c_str(), fname.size());
 			out.put(0);
 			
-			deflate(in, out, ISIZE);
+			deflate(in, out);
 
 			out.write((char*)&CRC32, 4);
 			out.write((char*)&ISIZE, 4);
@@ -75,7 +75,6 @@ void gzip_archive(vector<string> &filename, string &archiveName, string &outputF
 	}
 }
 
-//crc computation is not supported
 void gzip_dearchive(string &filename, string &outputFolder) {
 	int ct = 0;
 	fstream in(filename, ios_base::in | ios_base::binary);
@@ -178,12 +177,18 @@ void gzip_dearchive(string &filename, string &outputFolder) {
 			in.read((char*)&ISIZE, sizeof(ISIZE));
 			if (ISIZE != size) throw WrongSizeExc(ISIZE, size);
 			
-			//out closes automatically
+			out.close();
+			fstream in(filename, ios_base::in | ios_base::binary);
+			int realCRC32 = crc32(in, size);
+			if (CRC32 != realCRC32) throw WrongCRCExc(CRC32, realCRC32);
 		}
 		catch (InputOpenFail e) {
 			e.what();
 		}
 		catch (WrongSizeExc e) {
+			e.what();
+		}
+		catch (WrongCRCExc e) {
 			e.what();
 		}
 		catch (InflateDecodeFail e) {
