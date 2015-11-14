@@ -18,6 +18,7 @@ void InBuffer::buf_refresh() {
 	if (!st.is_open()) throw InBufferFail("trying to read from unopened stream");
 
 	st.get(buf);
+	//cout << (int) buf << ' ' << st.eof() << endl;
 	if (st.fail()) throw InBufferFail("failed to read from stream");
 
 	pos = 0;
@@ -48,6 +49,7 @@ void OutBuffer::buf_refresh() {
 	st.put(buf);
 	if (st.fail()) throw OutBufferFail("faild to write to stream");
 
+	buf = 0;
 	pos = 0;
 }
 
@@ -62,5 +64,6 @@ void OutBuffer::writebits(int val, int n, bool stOrder) {
 }
 
 OutBuffer::~OutBuffer() {
-	buf_refresh();
+	if (pos)
+		buf_refresh();
 }

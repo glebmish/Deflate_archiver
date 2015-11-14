@@ -27,6 +27,6 @@ public:
 	OutBuffer(fstream &ff);
 
 	void writebits(int val, int n, bool stOrder);
-
+	
 	~OutBuffer();
 };

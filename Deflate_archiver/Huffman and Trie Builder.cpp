@@ -6,7 +6,7 @@
 #include "MacrosAndPrecomputers.h"
 
 void Huffman_decoder(const vector<int> &lens, vector<int> &codes, vector<int> &lenCount) {
-	if (lenCount[0] == lens.size()) throw InflateDecodeFail("all zero length codes");
+	if (lenCount[0] == lens.size()) return;
 	codes.resize(lens.size());
 
 	int code = 0;
@@ -55,24 +55,27 @@ void update(Node *node, vector<int> &len) {
 void Huffman_builder(vector<int> &prob, vector<int> &len) {
 	vector<Node*> tree;
 	for (int i = 0; i < prob.size(); i++)
-		tree.push_back(new Node(i, prob[i], NULL, NULL));
+		if (prob[i] > 0)
+			tree.push_back(new Node(i, prob[i], NULL, NULL));
 	sort(tree.begin(), tree.end(), comp);
-
-	len.assign(tree.size(), 0);
 
 	while (tree.size() > 1) {
 		int last = tree.size() - 1;
+		
 		Node *anc = new Node(-1, tree[last]->prob + tree[last - 1]->prob, tree[last - 1], tree[last]);
-		update(anc, len);
+		tree.pop_back();
+		tree.pop_back();
 
-		tree.pop_back();
-		tree.pop_back();
+		update(anc, len);
 
 		vector<Node*>::iterator pos = upper_bound(tree.begin(), tree.end(), anc, comp);
 		tree.insert(pos, 1, anc);
 	}
-
-	delete tree[0];
+	if (tree.size() > 0)
+		delete tree[0];
+	for (int i = 0; i < len.size(); i++)
+		if (len[i] > 15)
+			len[i] = 15;
 }		
 
 Trie build_trie(InBuffer &buf, const vector<int> &code, const vector<int> &len) {

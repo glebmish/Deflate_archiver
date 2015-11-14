@@ -51,8 +51,8 @@ void gzip_archive(vector<string> &filename, string &archiveName, string &outputF
 			out.put(XFL);
 			out.put(OS);
 
-			int ISIZE;
-			int CRC32 = 0;
+			unsigned ISIZE;
+			unsigned CRC32 = 0;
 			in.seekg(0, in.end);
 			ISIZE = in.tellg();
 			in.seekg(0, in.beg);
@@ -179,7 +179,7 @@ void gzip_dearchive(string &filename, string &outputFolder) {
 			
 			out.close();
 			fstream in(filename, ios_base::in | ios_base::binary);
-			int realCRC32 = crc32(in, size);
+			unsigned realCRC32 = crc32(in, size);
 			if (CRC32 != realCRC32) throw WrongCRCExc(CRC32, realCRC32);
 		}
 		catch (InputOpenFail e) {

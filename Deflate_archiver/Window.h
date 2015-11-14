@@ -32,6 +32,6 @@ public:
 	InWindow(fstream &s);
 
 	char get();
-	int find(string s);
+	int find(string s, unsigned lastDst);
 };
 	

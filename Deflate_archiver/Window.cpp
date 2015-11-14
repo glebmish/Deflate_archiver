@@ -14,7 +14,9 @@ Window::Window(fstream &s): st(s) {
 OutWindow::OutWindow(fstream &s): Window(s) {}
 
 void OutWindow::add(char lit) {
-	arr.push_back(lit);
+	if (pos >= arr.size())
+		arr.push_back(lit);
+	else arr[pos] = lit;
 	++pos;
 	if (pos == wMax)
 		win_refresh();
@@ -59,19 +61,17 @@ char InWindow::get() {
 	return c;
 }
 
-int InWindow::find(string s) {
-	arr.append(s);
-	int dst = arr.rfind(s, pos - 1);
-	if (dst == string::npos)
-		return 0;
+int InWindow::find(string s, unsigned prevDst) {
+	if (prevDst != 0 && arr[(pos - prevDst - 1 + wMax) % wMax] == s[s.length() - 1])
+		return prevDst;
 
-	dst = pos - dst;
-	string rest = "";
-	for (int i = wMax + 1; i < arr.size();) {
-		rest += arr[i];
-		arr.pop_back();
-	}
+	unsigned dst = arr.rfind(s, pos - s.length() - 1);
+	if (maxReached && dst == string::npos)
+		dst = arr.rfind(s);
+	if (dst == string::npos || dst == pos)
+		return -1;
 
+	dst = (pos - s.length() - dst + wMax) % wMax;
 	return dst;
 }
 
