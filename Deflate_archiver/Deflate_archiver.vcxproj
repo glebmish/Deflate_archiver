@@ -82,7 +82,6 @@
   <ItemGroup>
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CRC32.cpp" />
-    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Deflate.cpp" />
     <ClCompile Include="gzip.cpp" />
     <ClCompile Include="Huffman and Trie Builder.cpp" />
@@ -95,7 +94,6 @@
   <ItemGroup>
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CRC32.h" />
-    <ClInclude Include="Debug.h" />
     <ClInclude Include="Deflate.h" />
     <ClInclude Include="Exceptions.h" />
     <ClInclude Include="gzip.h" />

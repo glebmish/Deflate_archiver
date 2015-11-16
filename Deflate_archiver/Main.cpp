@@ -5,11 +5,8 @@
 #include <cstring>
 using namespace std;
 
-//#define DEBUG
-
 #include "gzip.h"
 #include "Exceptions.h"
-#include "Debug.h"
 
 string get_path(string &filename) {
 	int delim = filename.find_last_of('/');

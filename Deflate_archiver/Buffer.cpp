@@ -1,6 +1,5 @@
 #include "Buffer.h"
 
-#include <iostream>
 #include <string>
 
 #include "MacrosAndPrecomputers.h"
@@ -18,7 +17,6 @@ void InBuffer::buf_refresh() {
 	if (!st.is_open()) throw InBufferFail("trying to read from unopened stream");
 
 	st.get(buf);
-	//cout << (int) buf << ' ' << st.eof() << endl;
 	if (st.fail()) throw InBufferFail("failed to read from stream");
 
 	pos = 0;

@@ -9,10 +9,7 @@
 #include "Buffer.h"
 #include "Window.h"
 #include "Trie.h"
-#include "Debug.h"
 #include "Exceptions.h"
-
-int biits = 0;
 
 void inflate_decode(InBuffer &buf, OutWindow &slWindow, Trie &litTrie, Trie &dstTrie) {
 	for (;;) {
@@ -89,29 +86,19 @@ void inflate_fixed(InBuffer &buf, OutWindow &slWindow) {
 
 void inflate_dynamic(InBuffer &buf, OutWindow &slWindow) {
 	int HLIT = buf.readbits(5) + 257; 
-	biits+=5;
 	int HDIST = buf.readbits(5) + 1;
-	biits+=5;
 	int HCLEN = buf.readbits(4) + 4;
-	biits+=4;
 	vector<int> hcLen(19, 0);
 	vector<int> hcCode(19, 0);
 	vector<int> hcLenCount(8, 0);
 
-	cout << biits << endl;
-
 	for (int i = 0; i < HCLEN; ++i) {
 		hcLen[hcOrder[i]] = buf.readbits(3);
-		biits+=3;
 		hcLenCount[hcLen[hcOrder[i]]]++;
 	}
 
-	cout << biits << endl;
-
 	Huffman_decoder(hcLen, hcCode, hcLenCount);
 	Trie hcTrie = build_trie(buf, hcCode, hcLen);
-
-	for (int i = 0; i < HCLEN; i++) cout << i << ' ' << hcOrder[i] << ' ' << hcLen[hcOrder[i]] << ' ' << hcCode[hcOrder[i]] << endl;
 
 	vector<int> litLen(288, 0);
 	vector<int> litCode(288);
@@ -128,14 +115,11 @@ void inflate_dynamic(InBuffer &buf, OutWindow &slWindow) {
 				currentCL = cur;
 			} else if (cur == 16) {
 				timesCounter = buf.readbits(2) + 3;
-				biits+=2;
 			} else if (cur == 17) {
 				timesCounter = buf.readbits(3) + 3;
-				biits+=3;
 				currentCL = 0;
 			} else if (cur == 18) {
 				timesCounter = buf.readbits(7) + 11;
-				biits+=7;
 				currentCL = 0;
 			} 
 		}
@@ -157,14 +141,11 @@ void inflate_dynamic(InBuffer &buf, OutWindow &slWindow) {
 				currentCL = cur;
 			} else if (cur == 16) {
 				timesCounter = buf.readbits(2) + 3;
-				biits+=2;
 			} else if (cur == 17) {
 				timesCounter = buf.readbits(3) + 3;
-				biits+=3;
 				currentCL = 0; 
 			} else if (cur == 18) {
 				timesCounter = buf.readbits(7) + 11;
-				biits+=7;
 				currentCL = 0;
 			}
 		}
@@ -175,17 +156,11 @@ void inflate_dynamic(InBuffer &buf, OutWindow &slWindow) {
 
 	Huffman_decoder(litLen, litCode, litLenCount);
 	Trie litTrie = build_trie(buf, litCode, litLen);
-	for (int i = 0; i < litCode.size(); i++) f << "lit " << litCode[i] << ' ' << litLen[i] << endl;
 
 	Huffman_decoder(dstLen, dstCode, dstLenCount);
 	Trie dstTrie = build_trie(buf, dstCode, dstLen);
-	for (int i = 0; i < dstCode.size(); i++) f << "dst " << dstCode[i] << ' ' << dstLen[i] << endl;
-
-	cout << biits << endl;
 
 	inflate_decode(buf, slWindow, litTrie, dstTrie);
-
-	cout << biits << endl;
 }
 
 void inflate(fstream &in, fstream &out) {
@@ -198,7 +173,6 @@ void inflate(fstream &in, fstream &out) {
 		do {
 			BFINAL = buf.readbits(1);
 			BTYPE = buf.readbits(2);
-			biits+=3;
 
 			if (BTYPE == 0)
 				inflate_stored(buf, slWindow);

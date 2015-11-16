@@ -9,9 +9,9 @@
 
 #define DEBUG
 
-#define MAX_BLOCK_SIZE 83886080 //10MB
+//#define MAX_BLOCK_SIZE 819200 //100KB
+#define MAX_BLOCK_SIZE 81920 //10KB
 #define MAX_STORED_SIZE 65536 //2^16
-#include <iostream>
 struct Symb {
 	bool isLit;
 	int lit;
@@ -21,81 +21,69 @@ struct Symb {
 	Symb(bool il, int l, int a, int al): isLit(il), lit(l), add(a), addLen(al) {}
 };
 
-int bits=0;
+vector<Symb> LZ77_encode_one(int prevLen, int prevDst, string &curStr) {
+	vector<Symb> paste;
+	if (prevDst == 0) {
+		paste.push_back(Symb(true,(unsigned char) curStr[0], 0, 0));
+		curStr.assign(curStr.begin() + 1, curStr.end());
+	} else {
+		int j = 0;
+		while (j + 1 <= 28 && prevLen >= litStartFrom[j + 1]) j++;
+		int lenAdd = prevLen - litStartFrom[j];
+		int lenAddLen = litExtraBits[j];
+		
+		paste.push_back(Symb(true, j + 257, lenAdd, lenAddLen));
+		
+		j = 0;
+		while (j + 1 <= 29 && prevDst >= dstStartFrom[j + 1]) j++;
+		int dstAdd = prevDst - dstStartFrom[j];
+		int dstAddLen = dstExtraBits[j];
+		
+		paste.push_back(Symb(false, j, dstAdd, dstAddLen));
 
-vector<Symb> LZ77(InWindow &slWindow, int blockSize, vector<Symb> &lz77Coded, vector<unsigned char> &charList) {
+		curStr = curStr[curStr.length() - 1];
+	}
+	return paste;
+}
+
+vector<Symb> LZ77_encode(InWindow &slWindow, int blockSize, vector<Symb> &lz77coded, vector<unsigned char> &charList) {
 	bool shouldStore = blockSize <= MAX_STORED_SIZE;
-	string cur = "";
+	string curStr = "";
 	int prevLen = 0, prevDst = 0;
 
 	for (int i = 0; i < min(blockSize, 3); ++i) {
-		unsigned char tmp = slWindow.get();
-		if (shouldStore) charList.push_back(tmp);
-		lz77Coded.push_back(Symb(true, tmp, 0, 0));
+		unsigned char curChr = slWindow.get();
+		if (shouldStore) charList.push_back(curChr);
+		lz77coded.push_back(Symb(true, curChr, 0, 0));
 	}
 	for (int i = 3; i < blockSize; i++) {
-		unsigned char tmp = slWindow.get();
-		if (shouldStore) charList.push_back(tmp);
-		cur += tmp;
-		if (cur.length() < 3)
+		unsigned char curChr = slWindow.get();
+		if (shouldStore) charList.push_back(curChr);
+		curStr += curChr;
+		if (curStr.length() < 3)
 			continue;
 
 		int dst;
 		if (prevLen == 258)
 			dst = -1;
 		else
-			dst = slWindow.find(cur, prevDst);
+			dst = slWindow.find(curStr, prevDst);
 
 		if (dst == -1) {
-
-			if (prevDst == 0) {
-				lz77Coded.push_back(Symb(true,(unsigned char) cur[0], 0, 0));
-				cur.assign(cur.begin() + 1, cur.end());
-			} else {
-				int j = 0;
-				while (j + 1 <= 28 && prevLen >= litStartFrom[j + 1]) j++;
-				int lenAdd = prevLen - litStartFrom[j];
-				int lenAddLen = litExtraBits[j];
-				
-				lz77Coded.push_back(Symb(true, j + 257, lenAdd, lenAddLen));
-				
-				j = 0;
-				while (j + 1 <= 29 && prevDst >= dstStartFrom[j + 1]) j++;
-				int dstAdd = prevDst - dstStartFrom[j];
-				int dstAddLen = dstExtraBits[j];
-				
-				lz77Coded.push_back(Symb(false, j, dstAdd, dstAddLen));
-				cur = cur[cur.length() - 1];
-			}
-
+			vector<Symb> paste = LZ77_encode_one(prevLen, prevDst, curStr);
+			lz77coded.insert(lz77coded.end(), paste.begin(), paste.end());
 			prevLen = prevDst = 0;
-
 		} else {
-			prevLen = cur.length();
+			prevLen = curStr.length();
 			prevDst = dst;
 		}
 	}
-	if (prevDst == 0) {
-		for (int i = 0; i < cur.length(); i++) 
-			lz77Coded.push_back(Symb(true,(unsigned char) cur[i], 0, 0));
-	} else {
-		int j = 0;
-		while (prevLen >= litStartFrom[j + 1]) j++;
-		int lenAdd = prevLen - litStartFrom[j];
-		int lenAddLen = litExtraBits[j];
+	vector<Symb> paste = LZ77_encode_one(prevLen, prevDst, curStr);
+	lz77coded.insert(lz77coded.end(), paste.begin(), paste.end());
+	prevLen = prevDst = 0;
+	lz77coded.push_back(Symb(true, 256, 0, 0));
 
-		lz77Coded.push_back(Symb(true, j + 257, lenAdd, lenAddLen));
-				
-		j = 0;
-		while (prevDst >= dstStartFrom[j + 1]) j++;
-		int dstAdd = prevDst - dstStartFrom[j];
-		int dstAddLen = dstExtraBits[j];
-
-		lz77Coded.push_back(Symb(false, j, dstAdd, dstAddLen));
-	}
-	lz77Coded.push_back(Symb(true, 256, 0, 0));
-
-	return lz77Coded;
+	return lz77coded;
 }
 
 void deflate_stored(OutBuffer &buf, vector<unsigned char> &charList) {
@@ -111,183 +99,148 @@ void deflate_stored(OutBuffer &buf, vector<unsigned char> &charList) {
 		buf.writebits(charList[i], 8, true);
 }
 
-void deflate_fixed(OutBuffer &buf, vector<Symb> &lz77Coded, vector<int> litLen, vector<int> dstLen) {
-	short BTYPE = 1;
-	buf.writebits(BTYPE, 2, true);
+vector<int> get_codes(vector<int> lens, int maxLen) {
+	vector<int> lenCounts(maxLen, 0);
+	vector<int> codes;
+	for (int i = 0; i < lens.size(); i++)
+		lenCounts[lens[i]]++;
+	Huffman_decoder(lens, codes, lenCounts);
+	return codes;
+}
 
-	//получение кодов символов
-	vector<int> litLenCount(20, 0);
-	vector<int> litCode;
-	for (int i = 0; i < litLen.size(); i++)
-		litLenCount[litLen[i]]++;
-	Huffman_decoder(litLen, litCode, litLenCount);
-
-	vector<int> dstLenCount(20, 0);
-	vector<int> dstCode;
-	for (int i = 0; i < dstLen.size(); i++)
-		dstLenCount[dstLen[i]]++;
-	Huffman_decoder(dstLen, dstCode, dstLenCount);
-
-
-	//вывод
-	for (int i = 0; i < lz77Coded.size(); i++) {
-		Symb cur = lz77Coded[i];
-		vector<int> &code = (cur.isLit) ? litCode : dstCode;
-		vector<int> &len = (cur.isLit) ? litLen : dstLen;
+void print_encoded(OutBuffer &buf, vector<Symb> coded, vector<int> litCodes, vector<int> litLens, vector<int> dstCodes, vector<int> dstLens) {
+	for (int i = 0; i < coded.size(); i++) {
+		Symb cur = coded[i];
+		vector<int> &code = (cur.isLit) ? litCodes : dstCodes;
+		vector<int> &len = (cur.isLit) ? litLens : dstLens;
 
 		buf.writebits(code[cur.lit], len[cur.lit], false);
 		buf.writebits(cur.add, cur.addLen, true);
 	}
 }
 
-void deflate_dynamic(OutBuffer &buf, vector<Symb> &lz77Coded, vector<int> &litLen, vector<int> &dstLen) {
-	short BTYPE = 2;
+void deflate_fixed(OutBuffer &buf, vector<Symb> &lz77Coded, vector<int> litLens, vector<int> dstLens) {
+	short BTYPE = 1;
 	buf.writebits(BTYPE, 2, true);
-	bits+=2;
 
-	//подсчет HLIT и HDIST
-	int HLIT = 257, HDIST = 1;
-	for (int i = 257; i < litLen.size(); i++)
-		if (litLen[i]) HLIT = i + 1;
-	for (int i = 1; i < dstLen.size(); i++)
-		if (dstLen[i]) HDIST = i + 1;
+	int maxLen = 20;
+	vector<int> litCodes = get_codes(litLens, maxLen);
+	vector<int> dstCodes = get_codes(dstLens, maxLen);
+	print_encoded(buf, lz77Coded, litCodes, litLens, dstCodes, dstLens);
+}
 
-	//подсчет какие символы и сколько их стоит подряд
-	vector<pair<int, int> > lenCt; //first - length, second - how much elements of this length in a raw
-	int len = litLen[0];
+int Hcount(vector<int> lens, int start) {
+	int ct = start;
+	for (int i = start; i < lens.size(); i++)
+		if (lens[i]) ct = i + 1;
+	return ct;
+}
+
+void print_hc_encoded(OutBuffer &buf, int HCLEN, vector<int> hcCodes, vector<int> hcLens, vector<Symb> coded) {
+	for (int i = 0; i < HCLEN; i++)
+		buf.writebits(hcLens[hcOrder[i]], 3, true);
+
+	for (int i = 0; i < coded.size(); i++) {
+		Symb cur = coded[i];
+
+		buf.writebits(hcCodes[cur.lit], hcLens[cur.lit], false);
+		buf.writebits(cur.add, cur.addLen, true);
+	}
+}
+
+vector<Symb> HC_encode_one(int len, int ct) {
+	vector<Symb> paste;
+	if (len) {
+		paste.push_back(Symb(false, len, 0, 0));
+		ct--;
+		
+		while (ct) {
+			int toInsert = min(ct, 6);
+			if (toInsert < 3)
+				for (int j = 0; j < toInsert; j++)
+					paste.push_back(Symb(false, len, 0, 0));
+			else
+				paste.push_back(Symb(false, 16, toInsert - 3, 2));
+			ct -= toInsert;
+		}
+	} else {
+		while (ct) {
+			int toInsert = min(ct, 138);
+			if (toInsert < 3)
+				for (int j = 0; j < toInsert; j++)
+					paste.push_back(Symb(false, 0, 0, 0));
+			else {
+				if (toInsert <= 10)
+					paste.push_back(Symb(false, 17, toInsert - 3, 3));
+				else 
+					paste.push_back(Symb(false, 18, toInsert - 11, 7));
+			}
+			ct -= toInsert;
+		}
+	}
+	return paste;
+}
+
+vector<Symb> HC_encode(int HLIT, int HDIST, vector<int> litLens, vector<int> dstLens) {
+	vector<Symb> coded;
+	int len = litLens[0];
 	int ct = 1;
 	for (int i = 1; i < HLIT; i++) {
-		cout << "len " << len << ", ct " << ct << endl;
-		if (litLen[i] == len)
+		if (litLens[i] == len)
 			ct++;
 		else {
-			lenCt.push_back(make_pair(len, ct));
-			len = litLen[i];
+			vector<Symb> paste = HC_encode_one(len, ct);
+			coded.insert(coded.end(), paste.begin(), paste.end());
+			len = litLens[i];
 			ct = 1;
 		}
 	}
 	for (int i = 0; i < HDIST; i++) {
-		if (dstLen[i] == len)
+		if (dstLens[i] == len)
 			ct++;
 		else {
-			lenCt.push_back(make_pair(len, ct));
-			len = dstLen[i];
+			vector<Symb> paste = HC_encode_one(len, ct);
+			coded.insert(coded.end(), paste.begin(), paste.end());
+			len = dstLens[i];
 			ct = 1;
 		}
 	}
-	lenCt.push_back(make_pair(len, ct));
+	vector<Symb> paste = HC_encode_one(len, ct);
+	coded.insert(coded.end(), paste.begin(), paste.end());
+	return coded;
+}
 
-	//составление последовательности кодированных символов
-	vector<Symb> codeAdd;
-	for (int i = 0; i < lenCt.size(); i++) {
-		if (lenCt[i].first) {
-			cout << "lenCt " << lenCt[i].first << endl;
-			codeAdd.push_back(Symb(false, lenCt[i].first, 0, 0));
-			lenCt[i].second--;
+void deflate_dynamic(OutBuffer &buf, vector<Symb> &lz77Coded, vector<int> &litLens, vector<int> &dstLens) {
+	short BTYPE = 2;
+	buf.writebits(BTYPE, 2, true);
 
-			while (lenCt[i].second) {
-				int toInsert = min(lenCt[i].second, 6);
-				if (toInsert < 3)
-					for (int j = 0; j < toInsert; j++)
-						codeAdd.push_back(Symb(false, lenCt[i].first, 0, 0));
-				else
-					codeAdd.push_back(Symb(false, 16, toInsert - 3, 2));
-				lenCt[i].second -= toInsert;
-			}
-		} else {
-			while (lenCt[i].second) {
-				int toInsert = min(lenCt[i].second, 138);
-				if (toInsert < 3)
-					for (int j = 0; j < toInsert; j++)
-						codeAdd.push_back(Symb(false, 0, 0, 0));
-				else {
-					if (toInsert <= 10)
-						codeAdd.push_back(Symb(false, 17, toInsert - 3, 3));
-					else 
-						codeAdd.push_back(Symb(false, 18, toInsert - 11, 7));
-				}
-				lenCt[i].second -= toInsert;
-			}
-		}
-		cout << codeAdd[codeAdd.size() - 1].lit << ' ' << codeAdd[codeAdd.size() - 1].addLen << ' ' << codeAdd[codeAdd.size() - 1].add << endl;
-	}
+	int HLIT = Hcount(litLens, 257);
+	int HDIST = Hcount(dstLens, 1);
 
-	//рассчитывание вероятности появления каждого символа
-	vector<int> hcProb(19, 0);
+	vector<Symb> HCcoded = HC_encode(HLIT, HDIST, litLens, dstLens);
 
-	for (int i = 0; i < codeAdd.size(); i++)
-		hcProb[codeAdd[i].lit]++;
+	vector<int> hcProbs(19, 0);
+	for (int i = 0; i < HCcoded.size(); i++)
+		hcProbs[HCcoded[i].lit]++;
 
-	//получение длин кодов hc кода
-	vector<int> hcLen(19);
-	Huffman_builder(hcProb, hcLen);
+	vector<int> hcLens(19);
+	Huffman_builder(hcProbs, hcLens);
+	vector<int> hcCodes = get_codes(hcLens, 8);
 
-	//получение кодов hc кода
-	vector<int> hcLenCount(8, 0);
-	vector<int> hcCode;
-	for (int i = 0; i < hcLen.size(); i++)
-		hcLenCount[hcLen[i]]++;
-	Huffman_decoder(hcLen, hcCode, hcLenCount);
-
-	//Подсчет HCLEN
 	int HCLEN = 4;
-	for (int i = 4; i < hcLen.size(); i++)
-		if (hcLen[hcOrder[i]]) HCLEN = i + 1;
+	for (int i = 4; i < hcLens.size(); i++)
+		if (hcLens[hcOrder[i]]) HCLEN = i + 1;
 
 	buf.writebits(HLIT - 257, 5, true);
-	bits+=5;
 	buf.writebits(HDIST - 1, 5, true);
-	bits+=5;
 	buf.writebits(HCLEN - 4, 4, true);
-	bits+=4;
 
-	cout << bits << endl;
+	print_hc_encoded(buf, HCLEN, hcCodes, hcLens, HCcoded);
 
-#ifdef DEBUG
-	for (int i = 0; i < HCLEN; i++) cout << i << ' ' << hcOrder[i] << ' ' << hcLen[hcOrder[i]] << ' ' << hcCode[hcOrder[i]] << endl;
-#endif
-	//вывод алфавита кодов алфавита
-	for (int i = 0; i < HCLEN; i++)
-		buf.writebits(hcLen[hcOrder[i]], 3, true),bits+=3;
-
-	cout << bits << endl;
-
-	ofstream f("file.txt");
-	//вывод кодированного алфавита
-	for (int i = 0; i < codeAdd.size(); i++) {
-		Symb cur = codeAdd[i];
-
-		buf.writebits(hcCode[cur.lit], hcLen[cur.lit], false), bits+=hcLen[cur.lit];
-		buf.writebits(cur.add, cur.addLen, true), bits+=cur.addLen;
-	}
-
-	cout << bits << endl;
-
-	//получение кодов символов
-	vector<int> litLenCount(20, 0);
-	vector<int> litCode;
-	for (int i = 0; i < litLen.size(); i++)
-		litLenCount[litLen[i]]++;
-	Huffman_decoder(litLen, litCode, litLenCount);
-	for (int i = 0; i < litCode.size(); i++) f << "lit " << litCode[i] << ' ' << litLen[i] << endl;
-
-	vector<int> dstLenCount(20, 0);
-	vector<int> dstCode;
-	for (int i = 0; i < dstLen.size(); i++)
-		dstLenCount[dstLen[i]]++;
-	Huffman_decoder(dstLen, dstCode, dstLenCount);
-	for (int i = 0; i < dstCode.size(); i++) f << "dst " << dstCode[i] << ' ' << dstLen[i] << endl;
-
-	//вывод кодированных символов
-	for (int i = 0; i < lz77Coded.size(); i++) {
-		Symb cur = lz77Coded[i];
-		vector<int> &code = (cur.isLit) ? litCode : dstCode;
-		vector<int> &len = (cur.isLit) ? litLen : dstLen;
-		buf.writebits(code[cur.lit], len[cur.lit], false), bits+=len[cur.lit];
-		buf.writebits(cur.add, cur.addLen, true), bits+=cur.addLen;
-	}
-
-	cout << bits << endl;
+	int maxLen = 20;
+	vector<int> litCodes = get_codes(litLens, maxLen);
+	vector<int> dstCodes = get_codes(dstLens, maxLen);
+	print_encoded(buf, lz77Coded, litCodes, litLens, dstCodes, dstLens);
 }
 
 // suppose dynamic code represented as (codesAm * 3) + (codesCt) * 3 * 2
@@ -327,32 +280,29 @@ int deflate_dynamic_estimate(vector<int> litLen, vector<int> dstLen) {
 	return codesAm * 3 + codesCt * 3 * 2;
 }
 
+int count_len(vector<int> probs, vector<int> lens) { 
+	int ct = 0;
+	for (int i = 0; i < lens.size(); i++)
+		ct += probs[i] * lens[i];
+	return ct;
+}
+
 void deflate_tree(InWindow &slWindow, OutBuffer &buf, int blockSize) {
-	//рассчет длины блока stored
 	int storedBlockLen = blockSize * 8;
 
-	//получение списка lit/len и dst кодов в порядке кодирования
-	vector<Symb> lz77Coded;
+	vector<Symb> lz77coded;
 	vector<unsigned char> charList;
-	LZ77(slWindow, blockSize, lz77Coded, charList);
+	LZ77_encode(slWindow, blockSize, lz77coded, charList);
 
-	//рассчитывание вероятности появления каждого символа для каждого дерева
-	vector<int> litProb(288, 0);
-	vector<int> dstProb(32, 0);
-
-	for (int i = 0; i < lz77Coded.size(); i++) {
-		if (lz77Coded[i].isLit)
-			litProb[lz77Coded[i].lit]++;
+	vector<int> litProbs(288, 0);
+	vector<int> dstProbs(32, 0);
+	for (int i = 0; i < lz77coded.size(); i++) {
+		if (lz77coded[i].isLit)
+			litProbs[lz77coded[i].lit]++;
 		else
-			dstProb[lz77Coded[i].lit]++;
+			dstProbs[lz77coded[i].lit]++;
 	}
-	ofstream f("data.txt");
-	for (int i = 0; i < litProb.size(); i++)
-		f << "Lit" << i << ';' << litProb[i] << endl;
-	for (int i = 0; i < dstProb.size(); i++)
-		f << "Dst" << i << ';' << dstProb[i] << endl;
 
-	//заполнение длин кодов символов fixed
 	vector<int> fixedLitLen(288);
 	for (int i = 0; i <= 143; i++)
 		fixedLitLen[i] = 8;
@@ -362,37 +312,25 @@ void deflate_tree(InWindow &slWindow, OutBuffer &buf, int blockSize) {
 		fixedLitLen[i] = 7;
 	for (int i = 280; i <= 287; i++)
 		fixedLitLen[i] = 8;
+
 	vector<int> fixedDstLen(32, 5);
 
-	//рассчет длины блока fixed
-	int fixedBlockLen = 0;
-	for (int i = 0; i < fixedLitLen.size(); i++)
-		fixedBlockLen += litProb[i] * fixedLitLen[i];
-	for (int i = 0; i < fixedDstLen.size(); i++)
-		fixedBlockLen += dstProb[i] * fixedDstLen[i];
-	
-	//получение длин кодов символов dynamic
+	int fixedBlockLen = count_len(litProbs, fixedLitLen) + count_len(dstProbs, fixedDstLen);
+
 	vector<int> dynamicLitLen(288);
-	Huffman_builder(litProb, dynamicLitLen);
-	for(int i = 0; i < dynamicLitLen.size(); i++)
-		cout << dynamicLitLen[i] << " ";
+	Huffman_builder(litProbs, dynamicLitLen);
 	vector<int> dynamicDstLen(32);
-	Huffman_builder(dstProb, dynamicDstLen);
+	Huffman_builder(dstProbs, dynamicDstLen);
 
-	//рассчет длины dynamic
-	int dynamicBlockLen = deflate_dynamic_estimate(dynamicLitLen, dynamicDstLen);
-	for (int i = 0; i < dynamicLitLen.size(); i++)
-		dynamicBlockLen += litProb[i] * dynamicLitLen[i];
-	for (int i = 0; i < dynamicDstLen.size(); i++)
-		dynamicBlockLen += dstProb[i] * dynamicDstLen[i];
+	int dynamicBlockLen = deflate_dynamic_estimate(dynamicLitLen, dynamicDstLen) +
+						  count_len(litProbs, dynamicLitLen) + count_len(dstProbs, dynamicDstLen);;
 
-	//выбор способа кодирования
-	//if (blockSize <= MAX_STORED_SIZE && storedBlockLen <= fixedBlockLen && storedBlockLen <= dynamicBlockLen)
-	//	deflate_stored(buf, charList);
-	//else if (fixedBlockLen <= dynamicBlockLen)
-	//	deflate_fixed(buf, lz77Coded, fixedLitLen, fixedDstLen);
-	//else 
-		deflate_dynamic(buf, lz77Coded, dynamicLitLen, dynamicDstLen);
+	if (blockSize <= MAX_STORED_SIZE && storedBlockLen <= fixedBlockLen && storedBlockLen <= dynamicBlockLen)
+		deflate_stored(buf, charList);
+	else if (fixedBlockLen <= dynamicBlockLen)
+		deflate_fixed(buf, lz77coded, fixedLitLen, fixedDstLen);
+	else 
+		deflate_dynamic(buf, lz77coded, dynamicLitLen, dynamicDstLen);
 }
 
 void deflate(fstream &in, fstream &out) {
@@ -409,7 +347,7 @@ void deflate(fstream &in, fstream &out) {
 			BFINAL = 0;
 		else 
 			BFINAL = 1;
-		buf.writebits(BFINAL, 1, true), bits+=1;
+		buf.writebits(BFINAL, 1, true);
 
 		int blockSize = min(size, MAX_BLOCK_SIZE);
 		deflate_tree(slWindow, buf, blockSize);
