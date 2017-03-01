@@ -1,5 +1,7 @@
 #include "Window.h"
 
+#include <cstdlib>
+
 #include "Exceptions.h"
 
 Window::Window(fstream &s): st(s) {

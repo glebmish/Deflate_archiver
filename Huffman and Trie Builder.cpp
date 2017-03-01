@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdlib>
 
 #include "Huffman and Trie Builder.h"
 
@@ -89,7 +90,7 @@ Trie build_trie(InBuffer &buf, const vector<int> &code, const vector<int> &len) 
 		return trie;
 	}
 	catch (WrongValExc e) {
-		e.what();
+		std::cout << e.what();
 		string error = "failed building tree";
 		throw InflateDecodeFail(error);
 	}

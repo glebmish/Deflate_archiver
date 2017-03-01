@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
 
 #include "Exceptions.h"
 #include "MacrosAndPrecomputers.h"

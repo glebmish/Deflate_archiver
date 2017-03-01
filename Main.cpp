@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <cstring>
+#include <cstdlib>
 using namespace std;
 
 #include "gzip.h"
@@ -88,6 +89,9 @@ int main(int argc, char* argv[]) {
 					filename.pop_back();
 				}
 
+				for (int i = 0; i < filename.size(); ++i)
+					cout << filename[i] << endl;
+
 			} else if (arg == "-d" || arg == "--dearchive") {
 				flags.dearchive = 1;
 				if (flags.archive) throw ArchAndDearchExc();
@@ -140,7 +144,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	catch (ArchAndDearchExc e) {
-		e.what();
+		std::cout << e.what();
 	}
 	return 0;
 #endif

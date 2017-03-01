@@ -3,6 +3,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 #include "Huffman and Trie Builder.h"
 #include "MacrosAndPrecomputers.h"
@@ -17,7 +18,7 @@ void inflate_decode(InBuffer &buf, OutWindow &slWindow, Trie &litTrie, Trie &dst
 		try {
 			lit = litTrie.next_word();
 		} catch(WrongCodeExc e) {
-			e.what();
+			std::cout << e.what();
 			lit = '?';
 		}
 		if (lit == 256)
@@ -32,7 +33,7 @@ void inflate_decode(InBuffer &buf, OutWindow &slWindow, Trie &litTrie, Trie &dst
 				dst = dstTrie.next_word();
 			} catch(WrongCodeExc e) {
 				cout << "dst: ";
-				e.what();
+				std::cout << e.what();
 				dst = 0;
 			}
 			dst = dstStartFrom[dst] + buf.readbits(dstExtraBits[dst]);
@@ -185,7 +186,7 @@ void inflate(fstream &in, fstream &out) {
 		} while (!BFINAL);
 	}
 	catch (InBufferFail e) {
-		e.what();
+		std::cout << e.what();
 		throw InflateDecodeFail("input buffer fail");
 	}
 }

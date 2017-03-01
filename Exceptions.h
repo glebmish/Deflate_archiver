@@ -6,13 +6,15 @@ using namespace std;
 
 //Main.cpp
 struct OutOfBoundExc : public exception {
-	void what() {
+	const char * what() const throw() {
 		cout << "Out of bound\n";
 	}
+
+	~OutOfBoundExc() throw() {}
 };
 
 struct ArchAndDearchExc : public exception {
-	void what() {
+	const char * what() const throw() {
 		cout << "Can't archive and dearchive files at the same time\n";
 	}
 };
@@ -24,34 +26,40 @@ struct InputOpenFail : public exception {
 
 	InputOpenFail(string f): filename(f) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "File \"" << filename << "\" could not be opened for reading\n";
 		std::system("pause");
 	}
+
+	~InputOpenFail() throw() {}
 };
 
-struct WrongSizeExc {
-	int origSz;
+struct WrongSizeExc : public exception {
+	int origSz; 
 	int curSz;
 
 	WrongSizeExc(int o, int c): origSz(o), curSz(c) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "Original size " << origSz << " does not match with current size " << curSz << ".\n";
 		std::system("pause");
 	}
+
+	~WrongSizeExc() throw() {}
 };
 
-struct WrongCRCExc {
+struct WrongCRCExc : public exception {
 	int origCRC;
 	int curCRC;
 
 	WrongCRCExc(int o, int c): origCRC(o), curCRC(c) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "Original CRC32 " << origCRC << " does not match with current CRC32 " << curCRC << ".\n";
 		std::system("pause");
 	}
+
+	~WrongCRCExc() throw() {}
 };
 
 //Inflate.cpp
@@ -60,10 +68,12 @@ struct InflateDecodeFail : public exception {
 
 	InflateDecodeFail(string e): error(e) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "Failed to decode current file: " << error << ".\n";
 		std::system("pause");
 	}
+
+	~InflateDecodeFail() throw() {}
 };
 
 //Trie.cpp
@@ -72,10 +82,12 @@ struct WrongValExc : public exception {
 
 	WrongValExc(int v): val(v) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "Wrong literal value " << val << ".\n";
 		std::system("pause");
 	}
+
+	~WrongValExc() throw() {}
 };
 
 struct WrongCodeExc : public exception {
@@ -83,10 +95,12 @@ struct WrongCodeExc : public exception {
 
 	WrongCodeExc(int c): code(c) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "Code " << code << " doesn't exist in the tree\n";
 		std::system("pause");
 	}
+
+	~WrongCodeExc() throw() {}
 };
 
 //Buffer.cpp
@@ -95,10 +109,12 @@ struct InBufferFail : public exception {
 
 	InBufferFail(string e): error(e) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "Reading fail: "<< error << ".\n";
 		std::system("pause");
 	}
+
+	~InBufferFail() throw() {}
 };
 
 struct OutBufferFail : public exception {
@@ -106,9 +122,11 @@ struct OutBufferFail : public exception {
 
 	OutBufferFail(string e): error(e) {};
 
-	void what() {
+	const char * what() const throw() {
 		cout << "Writing fail: "<< error << ".\n";
 		std::system("pause");
 	}
+
+	~OutBufferFail() throw() {}
 };
 
