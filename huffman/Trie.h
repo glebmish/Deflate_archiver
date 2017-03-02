@@ -4,7 +4,7 @@
 #include <vector>
 using namespace std;
 
-#include "Buffer.h"
+#include "../util/Buffer.h"
 
 class Trie {
 	vector<int> arr[4];

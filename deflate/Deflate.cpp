@@ -3,10 +3,10 @@
 #include <vector>
 #include <cstdlib>
 
-#include "Buffer.h"
-#include "Window.h"
-#include "Huffman and Trie Builder.h"
-#include "MacrosAndPrecomputers.h"
+#include "../util/Buffer.h"
+#include "../util/Window.h"
+#include "../huffman/Huffman and Trie Builder.h"
+#include "../util/MacrosAndPrecomputers.h"
 
 #define DEBUG
 

@@ -7,7 +7,7 @@
 using namespace std;
 
 #include "gzip.h"
-#include "Exceptions.h"
+#include "./exceptions/Exceptions.h"
 
 string get_path(string &filename) {
 	int delim = filename.find_last_of('/');

@@ -3,8 +3,8 @@
 #include <vector>
 using namespace std;
 
-#include "Trie.h"
-#include "Buffer.h"
+#include "./Trie.h"
+#include "../util/Buffer.h"
 
 struct Node;
 

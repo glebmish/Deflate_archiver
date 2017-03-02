@@ -2,10 +2,10 @@
 #include <algorithm>
 #include <cstdlib>
 
-#include "Huffman and Trie Builder.h"
+#include "./Huffman and Trie Builder.h"
 
-#include "Exceptions.h"
-#include "MacrosAndPrecomputers.h"
+#include "../exceptions/Exceptions.h"
+#include "../util/MacrosAndPrecomputers.h"
 
 void Huffman_decoder(const vector<int> &lens, vector<int> &codes, vector<int> &lenCount) {
 	if (lenCount[0] == lens.size()) return;

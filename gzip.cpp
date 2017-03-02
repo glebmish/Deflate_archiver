@@ -5,10 +5,10 @@
 #include <ctime>
 #include <cstdlib>
 
-#include "Inflate.h"
-#include "Deflate.h"
-#include "Exceptions.h"
-#include "CRC32.h"
+#include "./deflate/Inflate.h"
+#include "./deflate/Deflate.h"
+#include "./exceptions/Exceptions.h"
+#include "./util/CRC32.h"
 
 typedef unsigned char uchar;
 typedef unsigned int uint;

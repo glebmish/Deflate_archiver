@@ -1,15 +1,15 @@
-#include "Inflate.h"
+#include "./Inflate.h"
 
 #include <cstring>
 #include <string>
 #include <vector>
 
-#include "Huffman and Trie Builder.h"
-#include "MacrosAndPrecomputers.h"
-#include "Buffer.h"
-#include "Window.h"
-#include "Trie.h"
-#include "Exceptions.h"
+#include "../huffman/Huffman and Trie Builder.h"
+#include "../util/MacrosAndPrecomputers.h"
+#include "../util/Buffer.h"
+#include "../util/Window.h"
+#include "../huffman/Trie.h"
+#include "../exceptions/Exceptions.h"
 
 void inflate_decode(InBuffer &buf, OutWindow &slWindow, Trie &litTrie, Trie &dstTrie) {
 	for (;;) {

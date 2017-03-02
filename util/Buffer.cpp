@@ -3,8 +3,8 @@
 #include <string>
 #include <cstdlib>
 
-#include "MacrosAndPrecomputers.h"
-#include "Exceptions.h"
+#include "./MacrosAndPrecomputers.h"
+#include "../exceptions/Exceptions.h"
 
 Buffer::Buffer(fstream &s): st(s) {
 	pos = 0;

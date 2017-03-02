@@ -1,6 +1,6 @@
-#include "Window.h"
+#include "./Window.h"
 
-#include "Exceptions.h"
+#include "../exceptions/Exceptions.h"
 
 Window::Window(fstream &s): st(s) {
 	arr = "";

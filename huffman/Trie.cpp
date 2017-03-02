@@ -1,11 +1,11 @@
-#include "Trie.h"
+#include "./Trie.h"
 
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
 
-#include "Exceptions.h"
-#include "MacrosAndPrecomputers.h"
+#include "../exceptions/Exceptions.h"
+#include "../util/MacrosAndPrecomputers.h"
 
 Trie::Trie (InBuffer &b) : buf(b) {
 	for (int i = 0; i < 4; ++i)
