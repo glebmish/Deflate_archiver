@@ -1,6 +1,7 @@
 #include "Deflate.h"
 
 #include <vector>
+#include <cstdlib>
 
 #include "Buffer.h"
 #include "Window.h"

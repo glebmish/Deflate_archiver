@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <cstdlib>
 
 #include "Inflate.h"
 #include "Deflate.h"
@@ -24,11 +25,11 @@ union flags {
 };
 
 void gzip_archive(vector<string> &filename, string &archiveName, string &outputFolder) {
-	fstream out(outputFolder + archiveName, ios_base::out | ios_base::binary);
+	fstream out((outputFolder + archiveName).c_str(), ios_base::out | ios_base::binary);
 	
 	for (int i = 0; i < filename.size(); i++) {
 		try {
-			fstream in(filename[i], ios_base::in | ios_base::binary);
+			fstream in(filename[i].c_str(), ios_base::in | ios_base::binary);
 			if (in.fail())
 				throw InputOpenFail(filename[i]);
 
@@ -77,7 +78,7 @@ void gzip_archive(vector<string> &filename, string &archiveName, string &outputF
 
 void gzip_dearchive(string &filename, string &outputFolder) {
 	int ct = 0;
-	fstream in(filename, ios_base::in | ios_base::binary);
+	fstream in(filename.c_str(), ios_base::in | ios_base::binary);
 	if (in.fail())
 		throw InputOpenFail(filename);
 
@@ -149,12 +150,12 @@ void gzip_dearchive(string &filename, string &outputFolder) {
 				in >> CRC16;
 			}
 
-			fstream out(filename, ios_base::out | ios_base::binary | ios_base::_Noreplace);
+			fstream out(filename.c_str(), ios_base::out | ios_base::binary);
 			while (out.fail()) {
 				out.clear();
 				int delim = filename.find_last_of('.');
 				filename.insert(delim, " - copy");
-				out.open(filename, ios_base::out | ios_base::binary | ios_base::_Noreplace);
+				out.open(filename.c_str(), ios_base::out | ios_base::binary);
 			}
 
 			//compressed blocks
@@ -178,7 +179,7 @@ void gzip_dearchive(string &filename, string &outputFolder) {
 			if (ISIZE != size) throw WrongSizeExc(ISIZE, size);
 			
 			out.close();
-			fstream in(filename, ios_base::in | ios_base::binary);
+			fstream in(filename.c_str(), ios_base::in | ios_base::binary);
 			unsigned realCRC32 = crc32(in, size);
 			if (CRC32 != realCRC32) throw WrongCRCExc(CRC32, realCRC32);
 		}

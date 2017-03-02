@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <cstring>
+#include <cstdlib>
 using namespace std;
 
 #include "gzip.h"

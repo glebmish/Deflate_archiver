@@ -1,4 +1,6 @@
+
 #include <algorithm>
+#include <cstdlib>
 
 #include "Huffman and Trie Builder.h"
 

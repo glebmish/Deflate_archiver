@@ -1,6 +1,7 @@
 #include "Buffer.h"
 
 #include <string>
+#include <cstdlib>
 
 #include "MacrosAndPrecomputers.h"
 #include "Exceptions.h"
